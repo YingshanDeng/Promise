@@ -53,65 +53,60 @@ export default class Promise {
   }
 
   then (onResolved, onRejected) {
-    return new Promise((resolve, reject) => this._thenHandler(resolve, reject, onResolved, onRejected))
+    let promise2 = new Promise((resolve, reject) => {
+      let _rsFn = this._resolveWrapper(resolve, reject, onResolved, promise2)
+      let _rjFn = this._rejectWrapper(resolve, reject, onRejected, promise2)
+
+      switch (this._status) {
+        case PENDING:
+          this._onResolvedCb.push(_rsFn)
+          this._onRejectedCb.push(_rjFn)
+          break
+        case FULFILLED:
+          setTimeout(_rsFn.bind(this, this._v))
+          break
+        case REJECTED:
+          setTimeout(_rjFn.bind(this, this._v))
+          break
+      }
+    })
+    return promise2
   }
 
-  _thenHandler (resolve, reject, onResolved, onRejected) {
-    let _rsFn = this._resolveWrapper(resolve, reject, onResolved)
-    let _rjFn = this._rejectWrapper(resolve, reject, onRejected)
-
-    switch (this._status) {
-      case PENDING:
-        this._onResolvedCb.push(_rsFn)
-        this._onRejectedCb.push(_rjFn)
-        break
-      case FULFILLED:
-        _rsFn(this._v)
-        break
-      case REJECTED:
-        _rjFn(this._v)
-        break
-    }
-  }
-
-  _resolveWrapper (resolve, reject, onResolved) {
+  _resolveWrapper (resolve, reject, onResolved, promise2) {
     return (value) => {
-      setTimeout(() => {
-        if (!this._isFunction(onResolved)) {
-          return resolve(value)
-        }
+      if (!this._isFunction(onResolved)) {
+        return resolve(value)
+      }
 
-        try {
-          let x = onResolved(value)
-          if (this._isFunction(x)) {
-            x.then(resolve, reject)
-          } else {
-            resolve(x)
-          }
-        } catch (e) {
-          reject(e)
+      try {
+        let x = onResolved(value)
+        if (this._isFunction(x)) {
+          x.then(resolve, reject)
+        } else {
+          resolve(x)
         }
-      })
+      } catch (e) {
+        reject(e)
+      }
     }
   }
-  _rejectWrapper (resolve, reject, onRejected) {
+  _rejectWrapper (resolve, reject, onRejected, promise2) {
     return (reason) => {
-      setTimeout(() => {
-        if (!this._isFunction(onRejected)) {
-          return reject(reason)
-        }
+      if (!this._isFunction(onRejected)) {
+        return reject(reason)
+      }
 
-        try {
-          let x = onRejected(reason)
-          if (this._isFunction(x)) {
-            x.then(resolve, reject)
-          } else {
-            resolve(x)
-          }
-        } catch (e) {
-          reject(e)
+      try {
+        let x = onRejected(reason)
+        if (this._isFunction(x)) {
+          x.then(resolve, reject)
+        } else {
+          resolve(x)
         }
-      })
+      } catch (e) {
+        reject(e)
+      }
     }
   }
 
