@@ -1,0 +1,34 @@
+{
+  "name": "promise",
+  "version": "1.0.0",
+  "description": "Implementing Promise for JavaScript and Pass Compliances tests for Promises/A+",
+  "main": "promise.js",
+  "scripts": {
+    "test": "rm -rf ./dist && standard --verbose && gulp dist && promises-aplus-tests dist/promise-adapter.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YingshanDeng/Promise.git"
+  },
+  "keywords": [
+    "Promises/A+"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/YingshanDeng/Promise/issues"
+  },
+  "homepage": "https://github.com/YingshanDeng/Promise#readme",
+  "devDependencies": {
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-plugin-transform-es2015-modules-umd": "^6.24.1",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-register": "^6.26.0",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^7.0.0",
+    "gulp-load-plugins": "^1.5.0",
+    "gulp-uglify": "^3.0.0",
+    "promises-aplus-tests": "^2.1.2",
+    "standard": "^10.0.3"
+  }
+}
