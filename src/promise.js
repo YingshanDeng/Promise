@@ -115,7 +115,51 @@ export default class Promise {
     }
   }
 
-  // utils
+  catch (reason) {
+    return this.then(null, reason)
+  }
+
+  // Promise.resolve
+  static resolve (value) {
+    return new Promise((resolve, reject) => { resolve(value) })
+  }
+  // Promise.reject
+  static reject (reason) {
+    return new Promise((resolve, reject) => { reject(reason) })
+  }
+  // Promise.all
+  static all (promises) {
+    if (!Array.isArray(promises)) {
+      throw new TypeError(`${promises} is not array!`)
+    }
+    return new Promise((resolve, reject) => {
+      let _cnt = promises.length
+      let _result = []
+
+      function handle (i) {
+        return (value) => {
+          _result[i] = value
+          if (!(--_cnt)) {
+            resolve(_result)
+          }
+        }
+      }
+
+      promises.forEach((p, index) => p.then(handle(index), reject))
+    })
+  }
+
+  // Promise.race
+  static race (promises) {
+    if (!Array.isArray(promises)) {
+      throw new TypeError(`${promises} is not array!`)
+    }
+    return new Promise((resolve, reject) => {
+      promises.forEach(p => p.then(resolve, reject))
+    })
+  }
+
+  // helper
   _isFunction (fn) {
     return fn && typeof fn === 'function'
   }
