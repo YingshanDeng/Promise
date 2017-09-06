@@ -21,14 +21,14 @@ export default class Promise {
   }
 
   _resolve (value) {
-    if (this._status !== PENDING) {
-      return
-    }
-
-    this._status = FULFILLED
-    this._v = value
-
     setTimeout(() => {
+      if (this._status !== PENDING) {
+        return
+      }
+
+      this._status = FULFILLED
+      this._v = value
+
       let fn
       while ((fn = this._onResolvedCb.shift())) {
         fn.call(this, value)
@@ -37,14 +37,14 @@ export default class Promise {
   }
 
   _reject (reason) {
-    if (this._status !== PENDING) {
-      return
-    }
-
-    this._status = REJECTED
-    this._v = reason
-
     setTimeout(() => {
+      if (this._status !== PENDING) {
+        return
+      }
+
+      this._status = REJECTED
+      this._v = reason
+
       let fn
       while ((fn = this._onRejectedCb.shift())) {
         fn.call(this, reason)
@@ -53,61 +53,68 @@ export default class Promise {
   }
 
   then (onResolved, onRejected) {
-    let promise2 = new Promise((resolve, reject) => {
-      let _rsFn = this._resolveWrapper(resolve, reject, onResolved, promise2)
-      let _rjFn = this._rejectWrapper(resolve, reject, onRejected, promise2)
+    onResolved = this._isFunction(onResolved) ? onResolved : function (v) { return v }
+    onRejected = this._isFunction(onRejected) ? onRejected : function (r) { throw r }
 
+    var promise2 = new Promise((resolve, reject) => {
       switch (this._status) {
         case PENDING:
-          this._onResolvedCb.push(_rsFn)
-          this._onRejectedCb.push(_rjFn)
+          this._onResolvedCb.push((value) => {
+            try {
+              var x = onResolved(value)
+              if (x instanceof Promise) {
+                x.then(resolve, reject)
+              } else {
+                resolve(x)
+              }
+            } catch (e) {
+              reject(e)
+            }
+          })
+          this._onRejectedCb.push((reason) => {
+            try {
+              var x = onRejected(reason)
+              if (x instanceof Promise) {
+                x.then(resolve, reject)
+              } else {
+                resolve(x)
+              }
+            } catch (e) {
+              reject(e)
+            }
+          })
           break
         case FULFILLED:
-          setTimeout(_rsFn.bind(this, this._v))
+          setTimeout(() => {
+            try {
+              var x = onResolved(this._v)
+              if (x instanceof Promise) {
+                x.then(resolve, reject)
+              } else {
+                resolve(x)
+              }
+            } catch (e) {
+              reject(e)
+            }
+          })
           break
         case REJECTED:
-          setTimeout(_rjFn.bind(this, this._v))
+          setTimeout(() => {
+            try {
+              var x = onRejected(this._v)
+              if (x instanceof Promise) {
+                x.then(resolve, reject)
+              } else {
+                resolve(x)
+              }
+            } catch (e) {
+              reject(e)
+            }
+          })
           break
       }
     })
     return promise2
-  }
-
-  _resolveWrapper (resolve, reject, onResolved, promise2) {
-    return (value) => {
-      if (!this._isFunction(onResolved)) {
-        return resolve(value)
-      }
-
-      try {
-        let x = onResolved(value)
-        if (this._isFunction(x)) {
-          x.then(resolve, reject)
-        } else {
-          resolve(x)
-        }
-      } catch (e) {
-        reject(e)
-      }
-    }
-  }
-  _rejectWrapper (resolve, reject, onRejected, promise2) {
-    return (reason) => {
-      if (!this._isFunction(onRejected)) {
-        return reject(reason)
-      }
-
-      try {
-        let x = onRejected(reason)
-        if (this._isFunction(x)) {
-          x.then(resolve, reject)
-        } else {
-          resolve(x)
-        }
-      } catch (e) {
-        reject(e)
-      }
-    }
   }
 
   catch (reason) {
