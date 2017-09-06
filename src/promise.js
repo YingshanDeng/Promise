@@ -62,11 +62,7 @@ export default class Promise {
           this._onResolvedCb.push((value) => {
             try {
               var x = onResolved(value)
-              if (x instanceof Promise) {
-                x.then(resolve, reject)
-              } else {
-                resolve(x)
-              }
+              Promise.resolvePromise(promise2, x, resolve, reject)
             } catch (e) {
               reject(e)
             }
@@ -74,11 +70,7 @@ export default class Promise {
           this._onRejectedCb.push((reason) => {
             try {
               var x = onRejected(reason)
-              if (x instanceof Promise) {
-                x.then(resolve, reject)
-              } else {
-                resolve(x)
-              }
+              Promise.resolvePromise(promise2, x, resolve, reject)
             } catch (e) {
               reject(e)
             }
@@ -88,11 +80,7 @@ export default class Promise {
           setTimeout(() => {
             try {
               var x = onResolved(this._v)
-              if (x instanceof Promise) {
-                x.then(resolve, reject)
-              } else {
-                resolve(x)
-              }
+              Promise.resolvePromise(promise2, x, resolve, reject)
             } catch (e) {
               reject(e)
             }
@@ -102,11 +90,7 @@ export default class Promise {
           setTimeout(() => {
             try {
               var x = onRejected(this._v)
-              if (x instanceof Promise) {
-                x.then(resolve, reject)
-              } else {
-                resolve(x)
-              }
+              Promise.resolvePromise(promise2, x, resolve, reject)
             } catch (e) {
               reject(e)
             }
@@ -115,6 +99,58 @@ export default class Promise {
       }
     })
     return promise2
+  }
+
+  // The Promise Resolution Procedure
+  // https://promisesaplus.com/#the-promise-resolution-procedure
+  static resolvePromise (promise2, x, resolve, reject) {
+    var then
+    // multiple calls to the same argument are made, the first call takes precedence, and any further calls are ignored
+    var hasBeenCalled = false
+
+    // 2.3.1 If promise and x refer to the same object
+    if (promise2 === x) {
+      reject(new TypeError('Chaining cycle detected for promise!'))
+      return
+    }
+
+    // 2.3.2 If x is a promise
+    if (x instanceof Promise) {
+      if (x._status === PENDING) { // 2.3.2.1
+        x.then(function (v) {
+          Promise.resolvePromise(promise2, v, resolve, reject)
+        }, reject)
+      } else { // 2.3.2.2  2.3.2.3
+        x.then(resolve, reject)
+      }
+      return
+    }
+
+    // 2.3.3 Otherwise, if x is an object or function
+    if ((x !== null) && ((typeof x === 'object') || (typeof x === 'function'))) {
+      try {
+        then = x.then // 2.3.3.1
+        if (typeof then === 'function') { // 2.3.3.3
+          then.call(x, function rs (y) { // 2.3.3.3.1
+            if (hasBeenCalled) return // 2.3.3.3.3
+            hasBeenCalled = true
+            Promise.resolvePromise(promise2, y, resolve, reject)
+          }, function rj (r) { // 2.3.3.3.2
+            if (hasBeenCalled) return // 2.3.3.3.3
+            hasBeenCalled = true
+            reject(r)
+          })
+        } else { // 2.3.3.4
+          resolve(x)
+        }
+      } catch (e) { // 2.3.3.2
+        if (hasBeenCalled) return // 2.3.3.3.4.1
+        hasBeenCalled = true
+        reject(e) // 2.3.3.3.4.2
+      }
+    } else { // 2.3.4
+      resolve(x)
+    }
   }
 
   catch (reason) {

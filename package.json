@@ -4,7 +4,8 @@
   "description": "Implementing Promise for JavaScript and Pass Compliances tests for Promises/A+",
   "main": "promise.js",
   "scripts": {
-    "test": "rm -rf ./dist && standard --verbose && gulp dist && promises-aplus-tests dist/promise-adapter.js"
+    "test": "rm -rf ./dist && standard --verbose && gulp dist && promises-aplus-tests dist/promise-adapter.js",
+    "dist": "rm -rf ./dist && gulp dist"
   },
   "repository": {
     "type": "git",
@@ -13,7 +14,7 @@
   "keywords": [
     "Promises/A+"
   ],
-  "author": "",
+  "author": "YingshanDeng",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/YingshanDeng/Promise/issues"
